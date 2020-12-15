@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+
+    <springProperty scope="context" name="appName" source="spring.application.name"/>
+    <property name="log-path" value="./logs"/>
+    <!-- logback.xml加载早于application.yml，如果直接通过${参数key}的形式获取是无法获取到对应参数值的。
+           因此只能使用spring提供的标签来对此参数进行配置：注意此处不需要${}形式获取 -->
+    <property name="log.maxFileSize" value="256MB"/>
+    <property name="log.maxHistory" value="7"/>
+
+    <appender name="consoleLog" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>
+                <!-- %d - %msg%n -->
+                <pattern>
+                    %yellow(%date{yyyy-MM-dd HH:mm:ss}) |%highlight(%thread) |%highlight(%-5level) |%green(%logger:%line) |%highlight(%msg%n)
+                </pattern>
+            </pattern>
+        </layout>
+    </appender>
+
+    <appender name="fileInfoLog" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 过滤掉错误的日志，主要是错误型的日志级别最高，都会输出 -->
+        <file>${log-path}/${appName}-root.log</file>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>DENY</onMatch>
+            <onMismatch>ACCEPT</onMismatch>
+        </filter>
+        <encoder>
+            <!-- pattern节点，用来设置日志的输入格式 -->
+            <!-- %m输出的信息,%p日志级别,%t线程名,%d日期,%c类的全名,%i索引【从数字0开始递增】,,, -->
+            <pattern>
+                %d - %msg%n
+            </pattern>
+            <!-- 记录日志的编码 -->
+            <charset>UTF-8</charset> <!-- 此处设置字符集 -->
+        </encoder>
+
+        <!-- 滚动策略 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 路径 -->
+            <fileNamePattern>${log-path}/info/info-${appName}.%i.%d.log</fileNamePattern>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <TimeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <MaxFileSize>${log.maxFileSize}</MaxFileSize>
+            </TimeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="fileErrorLog" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 根据范围来过滤 -->
+        <file>${log-path}/${appName}-error.log</file>
+
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+
+        <encoder>
+            <!-- pattern节点，用来设置日志的输入格式 -->
+            <!-- %m输出的信息,%p日志级别,%t线程名,%d日期,%c类的全名,%i索引【从数字0开始递增】,,, -->
+            <pattern>
+                %d - %msg%n
+            </pattern>
+            <!-- 记录日志的编码 -->
+            <charset>UTF-8</charset> <!-- 此处设置字符集 -->
+        </encoder>
+
+        <!-- 滚动策略 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 路径 -->
+            <fileNamePattern>${log-path}/error/error-${appName}.%i.%d.log</fileNamePattern>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <TimeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <MaxFileSize>${log.maxFileSize}</MaxFileSize>
+            </TimeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+    </appender>
+
+    <!--设置具体包的日志级别-->
+    <logger name="org.springframework" level="INFO"/>
+    <logger name="springfox" level="WARN"/>
+    <logger name="org.apache.http" level="info"/>
+    <logger name="com.netflix.discovery" level="info"/>
+    <logger name="com.zaxxer.hikari" level="info"/>
+    <logger name="org.springframework.jdbc.core" level="debug"/>
+
+    <springProfile name="prod">
+        <root level="info">
+            <!-- 控制台的输出 -->
+            <appender-ref ref="consoleLog"/>
+            <!--正常信息保存到文件-->
+            <appender-ref ref="fileInfoLog"/>
+            <!--出错信息保存到文件-->
+            <appender-ref ref="fileErrorLog"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="dev">
+        <root level="debug">
+            <appender-ref ref="consoleLog"/>
+        </root>
+    </springProfile>
+
+    <root level="debug">
+        <!-- 控制台的输出 -->
+        <appender-ref ref="consoleLog"/>
+        <!--正常信息保存到文件-->
+        <appender-ref ref="fileInfoLog"/>
+        <!--出错信息保存到文件-->
+        <appender-ref ref="fileErrorLog"/>
+    </root>
+
+</configuration>
